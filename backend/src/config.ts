@@ -24,6 +24,10 @@ export function loadConfig(): Config {
   // Debug: log password length (not the actual password)
   console.log(`[CONFIG] AUTH_PASSWORD loaded, length: ${authPassword.length}`);
 
+  // Determine backend type
+  const backendType = (process.env.BACKEND_TYPE || 'sdk') as 'sdk' | 'cli-pipe';
+  console.log(`[CONFIG] Backend type: ${backendType}`);
+
   return {
     port: parseInt(process.env.PORT || '3000', 10),
     authPassword,
@@ -48,7 +52,9 @@ export function loadConfig(): Config {
     bashTimeoutSeconds: parseInt(process.env.BASH_TIMEOUT_SECONDS || '30', 10),
     bashMaxOutputSize: parseInt(process.env.BASH_MAX_OUTPUT_SIZE || '1048576', 10),
     logLevel: (process.env.LOG_LEVEL as any) || 'info',
-    logDir: process.env.LOG_DIR || '.claude-web/logs'
+    logDir: process.env.LOG_DIR || '.claude-web/logs',
+    backendType,
+    claudePath: process.env.CLAUDE_PATH || 'claude'
   };
 }
 

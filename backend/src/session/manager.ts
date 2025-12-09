@@ -163,6 +163,14 @@ export class SessionManager {
             session.lastActivity = event.timestamp;
           }
           break;
+
+        // Handle CLI session linking for cli-pipe backend
+        case 'cli_session_linked':
+          if (session) {
+            session.cliSessionId = event.cliSessionId;
+            session.lastActivity = event.timestamp;
+          }
+          break;
       }
     }
 
@@ -370,6 +378,25 @@ export class SessionManager {
    */
   isLocked(sessionId: string): boolean {
     return this.sessionLocks.get(sessionId) === true;
+  }
+
+  /**
+   * Set CLI session ID (for CLI pipe backend)
+   */
+  setCLISessionId(sessionId: string, cliSessionId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (session) {
+      session.cliSessionId = cliSessionId;
+      session.lastActivity = Date.now();
+
+      this.storage.appendEvent(sessionId, {
+        type: 'cli_session_linked',
+        timestamp: session.lastActivity,
+        cliSessionId
+      });
+
+      logger.info(`Linked session ${sessionId} to CLI session ${cliSessionId}`);
+    }
   }
 
   /**

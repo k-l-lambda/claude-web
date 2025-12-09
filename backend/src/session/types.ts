@@ -57,6 +57,11 @@ export interface StatusChangeEvent extends SessionEvent {
   status: string;
 }
 
+export interface CLISessionLinkedEvent extends SessionEvent {
+  type: 'cli_session_linked';
+  cliSessionId: string;
+}
+
 export type SessionEventType =
   | SessionCreatedEvent
   | UserMessageEvent
@@ -66,4 +71,5 @@ export type SessionEventType =
   | ToolResultsEvent
   | RoundCompleteEvent
   | SessionEndedEvent
-  | StatusChangeEvent;
+  | StatusChangeEvent
+  | CLISessionLinkedEvent;

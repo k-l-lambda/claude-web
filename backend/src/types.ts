@@ -8,6 +8,8 @@ import Anthropic from '@anthropic-ai/sdk';
 // Configuration
 // ============================================================================
 
+export type BackendType = 'sdk' | 'cli-pipe';
+
 export interface Config {
   port: number;
   authPassword: string;
@@ -24,6 +26,8 @@ export interface Config {
   bashMaxOutputSize: number;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logDir: string;
+  backendType: BackendType;  // 'sdk' or 'cli-pipe'
+  claudePath?: string;  // Path to claude CLI (for cli-pipe backend)
 }
 
 // ============================================================================
@@ -97,6 +101,7 @@ export interface SessionState {
   model: string;
   instructorHistory: MessageBlock[];
   workerContext?: any; // Transient, not persisted
+  cliSessionId?: string; // For CLI pipe backend - maps to claude CLI session
 }
 
 export interface MessageBlock {

@@ -8,9 +8,15 @@ import { logger } from '../utils/logger.js';
 import { clientManager, WSClient } from './client-manager.js';
 import { sessionManager } from '../session/manager.js';
 import { orchestrator } from '../orchestrator/index.js';
+import { cliPipeOrchestrator } from '../orchestrator/cli-pipe.js';
 import type { ClientMessage, ServerMessage, SessionInfo } from '../types.js';
 
 type MessageHandler = (client: WSClient, message: any) => Promise<void>;
+
+// Select orchestrator based on config
+const getOrchestrator = () => {
+  return config.backendType === 'cli-pipe' ? cliPipeOrchestrator : orchestrator;
+};
 
 class WebSocketHandler {
   private handlers: Map<string, MessageHandler> = new Map();
@@ -194,7 +200,7 @@ class WebSocketHandler {
       });
 
       // Run orchestrator
-      await orchestrator.run(sessionId, client.id);
+      await getOrchestrator().run(sessionId, client.id);
 
     } catch (error) {
       logger.error(`Failed to process input: ${error}`);
@@ -209,7 +215,7 @@ class WebSocketHandler {
     const { sessionId } = message;
 
     try {
-      orchestrator.interrupt(sessionId);
+      getOrchestrator().interrupt(sessionId);
       logger.info(`Interrupt requested for session: ${sessionId}`);
 
       this.sendToClient(client, {
