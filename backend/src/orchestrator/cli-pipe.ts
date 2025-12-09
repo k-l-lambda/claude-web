@@ -19,12 +19,25 @@ interface CLIRunContext {
   clientId: string;
   abortController: AbortController;
   cliClient: CLIPipeClient;
+  onMessage?: (msg: ServerMessage) => void;  // Optional callback for HTTP API
 }
 
 class CLIPipeOrchestrator {
   private activeRuns: Map<string, CLIRunContext> = new Map();
 
   async run(sessionId: string, clientId: string): Promise<void> {
+    return this.runWithCallback(sessionId, clientId);
+  }
+
+  /**
+   * Run orchestrator with optional message callback
+   * Used by HTTP API for sync/streaming responses
+   */
+  async runWithCallback(
+    sessionId: string,
+    clientId: string,
+    onMessage?: (msg: ServerMessage) => void
+  ): Promise<void> {
     // Check if already running
     if (this.activeRuns.has(sessionId)) {
       logger.warn(`Session ${sessionId} is already running`);
@@ -53,7 +66,8 @@ class CLIPipeOrchestrator {
       sessionId,
       clientId,
       abortController,
-      cliClient
+      cliClient,
+      onMessage
     };
 
     this.activeRuns.set(sessionId, context);
@@ -195,6 +209,12 @@ class CLIPipeOrchestrator {
   }
 
   private sendMessage(sessionId: string, message: ServerMessage): void {
+    // Check if there's an active context with callback
+    const context = this.activeRuns.get(sessionId);
+    if (context?.onMessage) {
+      context.onMessage(message);
+    }
+    // Also send via WebSocket for any connected clients
     wsHandler.sendToSession(sessionId, message);
   }
 

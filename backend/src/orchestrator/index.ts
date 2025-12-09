@@ -18,6 +18,7 @@ interface RunContext {
   sessionId: string;
   clientId: string;
   abortController: AbortController;
+  onMessage?: (msg: ServerMessage) => void;  // Optional callback for HTTP API
 }
 
 class Orchestrator {
@@ -25,6 +26,18 @@ class Orchestrator {
   private maxRounds: number = 50;
 
   async run(sessionId: string, clientId: string): Promise<void> {
+    return this.runWithCallback(sessionId, clientId);
+  }
+
+  /**
+   * Run orchestrator with optional message callback
+   * Used by HTTP API for sync/streaming responses
+   */
+  async runWithCallback(
+    sessionId: string,
+    clientId: string,
+    onMessage?: (msg: ServerMessage) => void
+  ): Promise<void> {
     // Check if already running
     if (this.activeRuns.has(sessionId)) {
       logger.warn(`Session ${sessionId} is already running`);
@@ -42,7 +55,7 @@ class Orchestrator {
     }
 
     const abortController = new AbortController();
-    const context: RunContext = { sessionId, clientId, abortController };
+    const context: RunContext = { sessionId, clientId, abortController, onMessage };
     this.activeRuns.set(sessionId, context);
 
     try {
@@ -374,6 +387,12 @@ class Orchestrator {
   }
 
   private sendMessage(sessionId: string, message: ServerMessage): void {
+    // Check if there's an active context with callback
+    const context = this.activeRuns.get(sessionId);
+    if (context?.onMessage) {
+      context.onMessage(message);
+    }
+    // Also send via WebSocket for any connected clients
     wsHandler.sendToSession(sessionId, message);
   }
 

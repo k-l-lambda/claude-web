@@ -129,6 +129,61 @@ claude-web/
 | `done` | Task completed |
 | `error` | Error message |
 
+## HTTP REST API
+
+All endpoints (except `/api/health` and `/api/config`) require `X-API-Key` header.
+
+### Session Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/sessions` | Create new session |
+| `GET` | `/api/sessions` | List all sessions |
+| `GET` | `/api/sessions/:id` | Get session details with history |
+| `DELETE` | `/api/sessions/:id` | End/delete session |
+
+### Chat
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/sessions/:id/messages` | Send message (sync, wait for completion) |
+| `GET` | `/api/sessions/:id/messages/stream` | SSE streaming (query param: `content`) |
+| `POST` | `/api/sessions/:id/messages/stream` | SSE streaming (body: `{content}`) |
+
+### Examples
+
+**Create Session**:
+```bash
+curl -X POST -H "X-API-Key: <password>" -H "Content-Type: application/json" \
+  -d '{"workDir": "/path/to/project"}' \
+  http://localhost:3000/api/sessions
+```
+
+**Send Message (Sync)**:
+```bash
+curl -X POST -H "X-API-Key: <password>" -H "Content-Type: application/json" \
+  -d '{"content": "Read the README.md file"}' \
+  http://localhost:3000/api/sessions/<session-id>/messages
+```
+
+**Stream Response (SSE)**:
+```bash
+curl -N -H "X-API-Key: <password>" \
+  "http://localhost:3000/api/sessions/<session-id>/messages/stream?content=Hello"
+```
+
+**SSE Event Types**:
+- `connected` - Connection established
+- `status` - Status update (thinking, executing, waiting)
+- `thinking` - Extended thinking content
+- `instructor_message` - Instructor agent response
+- `worker_message` - Worker agent response
+- `tool_use` - Tool being executed
+- `tool_result` - Tool execution result
+- `round_complete` - Round completed
+- `done` - Task completed
+- `error` - Error occurred
+
 ## Development
 
 ### Backend
