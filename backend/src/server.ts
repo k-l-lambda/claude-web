@@ -38,7 +38,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // SPA fallback - serve index.html for all non-API routes
-app.get('*', (req, res, next) => {
+// Express 5 uses {*splat} instead of * for wildcards
+app.get('/{*splat}', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }

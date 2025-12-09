@@ -5,7 +5,8 @@
 import { ref, computed, onUnmounted } from 'vue'
 import type { ClientMessage, ServerMessage } from '@/types'
 
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000`
+// Use same host and port as the page is served from
+const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`
 
 export function useWebSocket() {
   const ws = ref<WebSocket | null>(null)

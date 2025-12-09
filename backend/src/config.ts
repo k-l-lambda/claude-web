@@ -4,18 +4,29 @@
 
 import { config as loadEnv } from 'dotenv';
 import { resolve } from 'path';
+import { existsSync } from 'fs';
 import { Config } from './types.js';
 
-// Load .env file
+// Load .env file first
 loadEnv();
+
+// Load .env.local to override values (if exists)
+const envLocalPath = resolve(process.cwd(), '.env.local');
+if (existsSync(envLocalPath)) {
+  loadEnv({ path: envLocalPath, override: true });
+}
 
 /**
  * Load configuration from environment variables
  */
 export function loadConfig(): Config {
+  const authPassword = process.env.AUTH_PASSWORD || '';
+  // Debug: log password length (not the actual password)
+  console.log(`[CONFIG] AUTH_PASSWORD loaded, length: ${authPassword.length}`);
+
   return {
     port: parseInt(process.env.PORT || '3000', 10),
-    authPassword: process.env.AUTH_PASSWORD || '',
+    authPassword,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
     claudeModel: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
     enableThinking: process.env.ENABLE_THINKING === 'true',

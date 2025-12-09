@@ -3,12 +3,12 @@
  */
 
 import { WebSocket } from 'ws';
-import { config } from '../config';
-import { logger } from '../utils/logger';
-import { clientManager, WSClient } from './client-manager';
-import { sessionManager } from '../session/manager';
-import { orchestrator } from '../orchestrator';
-import type { ClientMessage, ServerMessage, SessionInfo } from '../types';
+import { config } from '../config.js';
+import { logger } from '../utils/logger.js';
+import { clientManager, WSClient } from './client-manager.js';
+import { sessionManager } from '../session/manager.js';
+import { orchestrator } from '../orchestrator/index.js';
+import type { ClientMessage, ServerMessage, SessionInfo } from '../types.js';
 
 type MessageHandler = (client: WSClient, message: any) => Promise<void>;
 
@@ -84,6 +84,9 @@ class WebSocketHandler {
 
   private async handleAuth(client: WSClient, message: { type: 'auth'; password: string }): Promise<void> {
     const { password } = message;
+
+    // Debug logging
+    logger.info(`Auth attempt - received password length: ${password?.length}, expected length: ${config.authPassword?.length}`);
 
     if (password === config.authPassword) {
       const userId = `user-${Date.now()}`;
