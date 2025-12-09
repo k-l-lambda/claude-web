@@ -22,7 +22,7 @@
     </header>
 
     <main class="chat-main">
-      <Terminal :messages="messages" ref="terminalRef" />
+      <Terminal :messages="messages" :streamingMessage="streamingMessage" ref="terminalRef" />
     </main>
 
     <footer class="chat-footer">
@@ -52,6 +52,7 @@ const currentSessionId = computed(() => sessionStore.currentSessionId)
 const currentStatus = computed(() => sessionStore.currentStatus)
 const currentRound = computed(() => sessionStore.currentRound)
 const messages = computed(() => sessionStore.messages)
+const streamingMessage = computed(() => sessionStore.streamingMessage)
 
 const inputPlaceholder = computed(() => {
   switch (currentStatus.value) {
@@ -87,6 +88,13 @@ const handleEndSession = () => {
 
 // Auto-scroll on new messages
 watch(messages, () => {
+  nextTick(() => {
+    terminalRef.value?.scrollToBottom()
+  })
+}, { deep: true })
+
+// Auto-scroll on streaming message updates
+watch(streamingMessage, () => {
   nextTick(() => {
     terminalRef.value?.scrollToBottom()
   })

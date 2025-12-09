@@ -134,8 +134,13 @@ class CLIPipeOrchestrator {
           break;
 
         case 'text':
-          // Accumulate text - will send full response at end
-          // For now, we could send partial updates
+          // Forward text deltas for streaming display
+          this.sendMessage(sessionId, {
+            type: 'text_delta',
+            content: event.content || '',
+            role: 'instructor',
+            timestamp: Date.now()
+          });
           break;
 
         case 'tool_use':

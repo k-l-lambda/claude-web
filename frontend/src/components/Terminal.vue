@@ -28,7 +28,22 @@
       </div>
     </div>
 
-    <div v-if="messages.length === 0" class="empty-terminal">
+    <!-- Streaming message display -->
+    <div
+      v-if="streamingMessage"
+      :class="['message', `message-${streamingMessage.type}`, 'streaming']"
+    >
+      <div class="message-header">
+        <span class="message-role">{{ getRoleLabel(streamingMessage.type) }}</span>
+        <span class="message-time">{{ formatTime(streamingMessage.timestamp) }}</span>
+        <span class="streaming-indicator">●</span>
+      </div>
+      <div class="message-content">
+        <pre class="text-content" v-html="formatContent(streamingMessage.content)"></pre><span class="cursor">▌</span>
+      </div>
+    </div>
+
+    <div v-if="messages.length === 0 && !streamingMessage" class="empty-terminal">
       <p>No messages yet</p>
       <p class="hint">Start by sending a message to Claude</p>
     </div>
@@ -39,8 +54,16 @@
 import { ref } from 'vue'
 import type { TerminalMessage } from '@/types'
 
+interface StreamingMessage {
+  id: string
+  type: TerminalMessage['type']
+  content: string
+  timestamp: number
+}
+
 defineProps<{
   messages: TerminalMessage[]
+  streamingMessage?: StreamingMessage | null
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -231,5 +254,27 @@ defineExpose({ scrollToBottom })
 .hint {
   font-size: 0.875rem;
   margin-top: 8px;
+}
+
+/* Streaming message styles */
+.streaming {
+  border: 1px solid var(--accent-blue);
+}
+
+.streaming-indicator {
+  color: var(--accent-green);
+  margin-left: 8px;
+  animation: blink 1s infinite;
+}
+
+.cursor {
+  animation: blink 0.5s infinite;
+  color: var(--accent-blue);
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>

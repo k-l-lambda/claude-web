@@ -16,6 +16,14 @@ export const useSessionStore = defineStore('session', () => {
   const messages = ref<TerminalMessage[]>([])
   const isLoading = ref(false)
 
+  // Streaming message state - for real-time display
+  const streamingMessage = ref<{
+    id: string
+    type: TerminalMessage['type']
+    content: string
+    timestamp: number
+  } | null>(null)
+
   const { send, onMessage } = useGlobalWebSocket()
 
   // Current session
@@ -38,6 +46,44 @@ export const useSessionStore = defineStore('session', () => {
     })
   }
 
+  // Extract text content from message content (string or ContentBlock array)
+  const extractTextContent = (content: any): string => {
+    if (typeof content === 'string') {
+      return content
+    }
+    if (Array.isArray(content)) {
+      // Extract text from ContentBlock array
+      return content
+        .filter((block: any) => block.type === 'text')
+        .map((block: any) => block.text)
+        .join('\n')
+    }
+    return String(content)
+  }
+
+  // Streaming message handlers
+  const appendToStreamingMessage = (role: 'instructor' | 'worker', delta: string) => {
+    if (!streamingMessage.value || streamingMessage.value.type !== role) {
+      // Start new streaming message
+      streamingMessage.value = {
+        id: generateMessageId(),
+        type: role,
+        content: delta,
+        timestamp: Date.now()
+      }
+    } else {
+      // Append to existing streaming message
+      streamingMessage.value.content += delta
+    }
+  }
+
+  const finalizeStreamingMessage = () => {
+    if (streamingMessage.value) {
+      messages.value.push({ ...streamingMessage.value } as TerminalMessage)
+      streamingMessage.value = null
+    }
+  }
+
   // Listen for server messages
   onMessage((msg) => {
     switch (msg.type) {
@@ -57,10 +103,11 @@ export const useSessionStore = defineStore('session', () => {
         messages.value = []
         // Restore history
         msg.history.forEach(block => {
+          const content = extractTextContent(block.content)
           if (block.role === 'user') {
-            addMessage('user', typeof block.content === 'string' ? block.content : JSON.stringify(block.content))
+            addMessage('user', content)
           } else {
-            addMessage('instructor', typeof block.content === 'string' ? block.content : JSON.stringify(block.content))
+            addMessage('instructor', content)
           }
         })
         addMessage('system', 'Session resumed')
@@ -77,12 +124,29 @@ export const useSessionStore = defineStore('session', () => {
         addMessage('thinking', msg.content)
         break
 
+      case 'text_delta':
+        // Handle streaming text deltas
+        appendToStreamingMessage(msg.role, msg.content)
+        break
+
       case 'instructor_message':
-        addMessage('instructor', msg.content)
+        // Finalize any streaming content first, then add complete message
+        // Note: if we're streaming, the streamed content is the same as this message
+        // So we just finalize and don't add a duplicate
+        if (streamingMessage.value && streamingMessage.value.type === 'instructor') {
+          finalizeStreamingMessage()
+        } else {
+          addMessage('instructor', msg.content)
+        }
         break
 
       case 'worker_message':
-        addMessage('worker', msg.content)
+        // Same logic as instructor_message
+        if (streamingMessage.value && streamingMessage.value.type === 'worker') {
+          finalizeStreamingMessage()
+        } else {
+          addMessage('worker', msg.content)
+        }
         break
 
       case 'system_message':
@@ -107,6 +171,7 @@ export const useSessionStore = defineStore('session', () => {
         break
 
       case 'done':
+        finalizeStreamingMessage()
         currentStatus.value = 'waiting'
         addMessage('system', 'Task completed')
         break
@@ -177,6 +242,7 @@ export const useSessionStore = defineStore('session', () => {
     currentRound,
     currentModel,
     messages,
+    streamingMessage,
     isLoading,
     listSessions,
     createSession,

@@ -32,6 +32,7 @@ export function loadConfig(): Config {
     port: parseInt(process.env.PORT || '3000', 10),
     authPassword,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+    anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL || undefined,
     claudeModel: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
     enableThinking: process.env.ENABLE_THINKING === 'true',
     workDir: resolve(process.env.WORK_DIR || process.cwd()),

@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export interface ClaudeConfig {
   apiKey: string;
+  baseURL?: string;
   model: string;
   enableThinking: boolean;
   maxTokens?: number;

@@ -170,6 +170,14 @@ class Orchestrator {
             content: event.content || '',
             timestamp: Date.now()
           });
+        } else if (event.type === 'text') {
+          // Forward text deltas for streaming display
+          this.sendMessage(session.sessionId, {
+            type: 'text_delta',
+            content: event.content || '',
+            role: 'instructor',
+            timestamp: Date.now()
+          });
         }
       }
     });
@@ -303,6 +311,14 @@ class Orchestrator {
             this.sendMessage(session.sessionId, {
               type: 'thinking',
               content: `[Worker] ${event.content || ''}`,
+              timestamp: Date.now()
+            });
+          } else if (event.type === 'text') {
+            // Forward text deltas for streaming display
+            this.sendMessage(session.sessionId, {
+              type: 'text_delta',
+              content: event.content || '',
+              role: 'worker',
               timestamp: Date.now()
             });
           }

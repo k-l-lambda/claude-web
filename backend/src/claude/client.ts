@@ -22,20 +22,22 @@ export class ClaudeClient {
 
   constructor(clientConfig?: Partial<ClaudeConfig>) {
     const apiKey = clientConfig?.apiKey || config.anthropicApiKey;
+    const baseURL = clientConfig?.baseURL || config.anthropicBaseUrl;
 
     if (!apiKey) {
       throw new Error('Anthropic API key is required');
     }
 
     this.client = new Anthropic({
-      apiKey
+      apiKey,
+      ...(baseURL && { baseURL })
     });
 
     this.model = clientConfig?.model || config.claudeModel;
     this.enableThinking = clientConfig?.enableThinking ?? config.enableThinking;
     this.maxTokens = clientConfig?.maxTokens || 8192;
 
-    logger.info(`Claude client initialized with model: ${this.model}`);
+    logger.info(`Claude client initialized with model: ${this.model}${baseURL ? `, baseURL: ${baseURL}` : ''}`);
   }
 
   /**
