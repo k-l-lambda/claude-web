@@ -37,6 +37,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
+// Get server config (non-sensitive)
+app.get('/api/config', (req, res) => {
+  res.json({
+    defaultWorkDir: config.workDir,
+    model: config.claudeModel
+  });
+});
+
 // SPA fallback - serve index.html for all non-API routes
 // Express 5 uses {*splat} instead of * for wildcards
 app.get('/{*splat}', (req, res, next) => {

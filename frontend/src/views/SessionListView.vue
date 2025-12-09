@@ -109,6 +109,19 @@ const handleLogout = () => {
   router.push({ name: 'login' })
 }
 
+// Fetch default workDir from server config
+const fetchConfig = async () => {
+  try {
+    const res = await fetch('/api/config')
+    const data = await res.json()
+    if (data.defaultWorkDir && !workDir.value) {
+      workDir.value = data.defaultWorkDir
+    }
+  } catch (e) {
+    console.warn('Failed to fetch config:', e)
+  }
+}
+
 // Navigate to chat when session is created or resumed
 watch(() => sessionStore.currentSessionId, (sessionId) => {
   if (sessionId) {
@@ -117,6 +130,7 @@ watch(() => sessionStore.currentSessionId, (sessionId) => {
 })
 
 onMounted(() => {
+  fetchConfig()
   refreshSessions()
 })
 </script>

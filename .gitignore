@@ -3,3 +3,5 @@ dist/
 
 *.local
 *.local.*
+
+backend/sessions/
