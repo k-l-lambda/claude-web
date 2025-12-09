@@ -10,7 +10,12 @@
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["claude", "ai", "development", "assistant"],
+  "keywords": [
+    "claude",
+    "ai",
+    "development",
+    "assistant"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -18,6 +23,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "glob": "^13.0.0",
     "uuid": "^13.0.0",
     "ws": "^8.18.3"
   },
@@ -31,4 +37,3 @@
     "typescript": "^5.9.3"
   }
 }
-

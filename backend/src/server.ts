@@ -6,8 +6,10 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import cors from 'cors';
+import path from 'path';
 import { config, validateConfig } from './config.js';
 import { logger } from './utils/logger.js';
+import { wsHandler } from './websocket/handler.js';
 
 // Validate configuration on startup
 try {
@@ -26,9 +28,21 @@ const server = createServer(app);
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from frontend dist
+const frontendPath = path.join(process.cwd(), '../frontend/dist');
+app.use(express.static(frontendPath));
+
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
+});
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // WebSocket server
@@ -38,42 +52,17 @@ wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress;
   logger.info(`WebSocket client connected from ${clientIp}`);
 
-  ws.on('message', (data) => {
-    try {
-      const message = JSON.parse(data.toString());
-      logger.debug('Received message:', message.type);
-      // TODO: Handle messages via WebSocketManager
-    } catch (error) {
-      logger.error('Failed to parse WebSocket message:', error);
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Invalid message format'
-      }));
-    }
-  });
-
-  ws.on('close', () => {
-    logger.info(`WebSocket client disconnected from ${clientIp}`);
-  });
-
-  ws.on('error', (error) => {
-    logger.error('WebSocket error:', error);
-  });
-
-  // Send welcome message
-  ws.send(JSON.stringify({
-    type: 'system_message',
-    content: 'Connected to Claude Code Web',
-    level: 'info',
-    timestamp: Date.now()
-  }));
+  // Hand off to WebSocket handler
+  wsHandler.handleConnection(ws);
 });
 
 // Start server
 server.listen(config.port, () => {
   logger.info(`Server started on port ${config.port}`);
   logger.info(`Working directory: ${config.workDir}`);
+  logger.info(`API endpoint: http://localhost:${config.port}/api`);
   logger.info(`WebSocket endpoint: ws://localhost:${config.port}`);
+  logger.info(`Frontend: http://localhost:${config.port}`);
 });
 
 // Graceful shutdown
