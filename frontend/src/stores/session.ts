@@ -4,6 +4,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import yaml from 'js-yaml'
 import { useGlobalWebSocket } from '@/composables/useWebSocket'
 import type { SessionInfo, SessionStatus, TerminalMessage } from '@/types'
 
@@ -59,6 +60,18 @@ export const useSessionStore = defineStore('session', () => {
         .join('\n')
     }
     return String(content)
+  }
+
+  // Format object as YAML string
+  const formatAsYaml = (obj: any): string => {
+    if (typeof obj === 'string') {
+      return obj
+    }
+    try {
+      return yaml.dump(obj, { lineWidth: -1, noRefs: true })
+    } catch {
+      return JSON.stringify(obj, null, 2)
+    }
   }
 
   // Streaming message handlers
@@ -154,11 +167,11 @@ export const useSessionStore = defineStore('session', () => {
         break
 
       case 'tool_use':
-        addMessage('tool_use', `Using tool: ${msg.tool}`, { tool: msg.tool, input: msg.input })
+        addMessage('tool_use', `Using tool: ${msg.tool}\n${formatAsYaml(msg.input)}`, { tool: msg.tool, input: msg.input })
         break
 
       case 'tool_result':
-        addMessage('tool_result', typeof msg.output === 'string' ? msg.output : JSON.stringify(msg.output, null, 2), { tool: msg.tool, success: msg.success })
+        addMessage('tool_result', formatAsYaml(msg.output), { tool: msg.tool, success: msg.success })
         break
 
       case 'waiting_input':

@@ -23,6 +23,7 @@ export type ServerMessage =
   | { type: 'session_list'; sessions: SessionInfo[] }
   | { type: 'session_info'; session: SessionInfo }
   | { type: 'thinking'; content: string; timestamp: number }
+  | { type: 'text_delta'; content: string; role: 'instructor' | 'worker'; timestamp: number }
   | { type: 'instructor_message'; content: string; timestamp: number }
   | { type: 'worker_message'; content: string; timestamp: number }
   | { type: 'system_message'; content: string; level: 'info' | 'warning' | 'error'; timestamp: number }

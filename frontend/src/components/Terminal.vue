@@ -14,7 +14,7 @@
           <div class="tool-header">
             <span class="tool-name">{{ msg.metadata?.tool }}</span>
           </div>
-          <pre v-if="msg.metadata?.input" class="tool-input">{{ formatJson(msg.metadata.input) }}</pre>
+          <pre class="tool-input">{{ msg.content.replace(/^Using tool: \w+\n/, '') }}</pre>
         </template>
         <template v-else-if="msg.type === 'tool_result'">
           <div :class="['tool-result-header', msg.metadata?.success ? 'success' : 'error']">
