@@ -155,9 +155,17 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  const endSession = () => {
-    if (currentSessionId.value) {
-      send({ type: 'end_session', sessionId: currentSessionId.value })
+  const endSession = (sessionId?: string) => {
+    const targetSessionId = sessionId || currentSessionId.value
+    if (targetSessionId) {
+      send({ type: 'end_session', sessionId: targetSessionId })
+      // Remove from local list immediately for better UX
+      sessions.value = sessions.value.filter(s => s.sessionId !== targetSessionId)
+      // If ending current session, clear it
+      if (targetSessionId === currentSessionId.value) {
+        currentSessionId.value = null
+        currentStatus.value = 'waiting'
+      }
     }
   }
 

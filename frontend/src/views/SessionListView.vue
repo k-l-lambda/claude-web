@@ -50,15 +50,27 @@
             v-for="session in sessions"
             :key="session.sessionId"
             class="session-card"
-            @click="handleResumeSession(session.sessionId)"
           >
             <div class="session-header">
-              <span class="session-id">{{ session.sessionId.slice(0, 8) }}...</span>
-              <span :class="['status-badge', `status-${session.status}`]">
-                {{ session.status }}
+              <span class="session-id" @click="handleResumeSession(session.sessionId)">
+                {{ session.sessionId.slice(0, 8) }}...
               </span>
+              <div class="session-actions">
+                <span :class="['status-badge', `status-${session.status}`]">
+                  {{ session.status }}
+                </span>
+                <button
+                  class="btn-delete"
+                  @click.stop="handleDeleteSession(session.sessionId)"
+                  title="Delete session"
+                >
+                  &times;
+                </button>
+              </div>
             </div>
-            <div class="session-workdir">{{ session.workDir }}</div>
+            <div class="session-workdir" @click="handleResumeSession(session.sessionId)">
+              {{ session.workDir }}
+            </div>
             <div class="session-meta">
               <span>Rounds: {{ session.roundCount }}</span>
               <span>{{ formatDate(session.lastActivity) }}</span>
@@ -98,6 +110,12 @@ const handleCreateSession = () => {
 
 const handleResumeSession = (sessionId: string) => {
   sessionStore.resumeSession(sessionId)
+}
+
+const handleDeleteSession = (sessionId: string) => {
+  if (confirm(`Are you sure you want to delete session ${sessionId.slice(0, 8)}...?`)) {
+    sessionStore.endSession(sessionId)
+  }
 }
 
 const refreshSessions = () => {
@@ -269,6 +287,33 @@ h2 {
 .session-id {
   font-family: 'Fira Code', monospace;
   color: var(--accent-green);
+  cursor: pointer;
+}
+
+.session-id:hover {
+  text-decoration: underline;
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  padding: 2px 6px;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.btn-delete:hover {
+  color: var(--accent-red);
+  background-color: rgba(255, 107, 107, 0.1);
 }
 
 .status-badge {
@@ -288,6 +333,11 @@ h2 {
   color: var(--text-secondary);
   margin-bottom: 8px;
   word-break: break-all;
+  cursor: pointer;
+}
+
+.session-workdir:hover {
+  color: var(--text-primary);
 }
 
 .session-meta {

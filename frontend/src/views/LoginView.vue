@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -36,6 +36,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const password = ref('')
+const attemptingAutoLogin = ref(false)
 
 const isLoading = computed(() => authStore.isLoading)
 const authError = computed(() => authStore.authError)
@@ -50,6 +51,17 @@ const handleLogin = async () => {
 watch(() => authStore.isAuthenticated, (authenticated) => {
   if (authenticated) {
     router.push({ name: 'sessions' })
+  }
+})
+
+// Try auto-login on mount
+onMounted(async () => {
+  const saved = authStore.getSavedPassword()
+  if (saved) {
+    attemptingAutoLogin.value = true
+    password.value = saved
+    await authStore.tryAutoLogin()
+    attemptingAutoLogin.value = false
   }
 })
 </script>
