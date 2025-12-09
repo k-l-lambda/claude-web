@@ -2,9 +2,11 @@
  * HTTP API Routes for Claude Code Web
  *
  * Provides REST endpoints alongside WebSocket for agent usage.
+ * Supports both JSON and YAML response formats via Accept header or ?format=yaml query param.
  */
 
 import { Router, Request, Response } from 'express';
+import yaml from 'js-yaml';
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
 import { sessionManager } from '../session/manager.js';
@@ -23,6 +25,30 @@ const getOrchestrator = () => {
   return config.backendType === 'cli-pipe' ? cliPipeOrchestrator : orchestrator;
 };
 
+/**
+ * Check if client prefers YAML format
+ */
+function wantsYaml(req: Request): boolean {
+  // Check query param first
+  if (req.query.format === 'yaml') return true;
+  // Check Accept header
+  const accept = req.headers.accept || '';
+  return accept.includes('application/x-yaml') || accept.includes('text/yaml');
+}
+
+/**
+ * Send response in preferred format (JSON or YAML)
+ */
+function sendResponse(req: Request, res: Response, data: any, statusCode: number = 200): void {
+  if (wantsYaml(req)) {
+    res.status(statusCode)
+       .header('Content-Type', 'text/yaml; charset=utf-8')
+       .send(yaml.dump(data, { lineWidth: -1, noRefs: true }));
+  } else {
+    res.status(statusCode).json(data);
+  }
+}
+
 // ============================================================================
 // Session Management
 // ============================================================================
@@ -35,7 +61,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
     const { workDir, model, instruction } = req.body;
 
     if (!workDir) {
-      res.status(400).json({ error: 'workDir is required' });
+      sendResponse(req, res, { error: 'workDir is required' }, 400);
       return;
     }
 
@@ -49,7 +75,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
 
       const result = await runOrchestratorSync(session.sessionId);
 
-      res.json({
+      sendResponse(req, res, {
         sessionId: session.sessionId,
         status: session.status,
         workDir: session.workDir,
@@ -61,7 +87,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({
+    sendResponse(req, res, {
       sessionId: session.sessionId,
       status: session.status,
       workDir: session.workDir,
@@ -69,7 +95,7 @@ router.post('/sessions', async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(`API: Failed to create session: ${error}`);
-    res.status(500).json({ error: (error as Error).message });
+    sendResponse(req, res, { error: (error as Error).message }, 500);
   }
 });
 
@@ -79,10 +105,10 @@ router.post('/sessions', async (req: Request, res: Response) => {
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
     const sessions = await sessionManager.listSessions();
-    res.json({ sessions });
+    sendResponse(req, res, { sessions });
   } catch (error) {
     logger.error(`API: Failed to list sessions: ${error}`);
-    res.status(500).json({ error: (error as Error).message });
+    sendResponse(req, res, { error: (error as Error).message }, 500);
   }
 });
 
@@ -95,7 +121,7 @@ router.get('/sessions/:id', async (req: Request, res: Response) => {
     const session = await sessionManager.loadSession(id);
 
     if (!session) {
-      res.status(404).json({ error: 'Session not found' });
+      sendResponse(req, res, { error: 'Session not found' }, 404);
       return;
     }
 
@@ -109,10 +135,10 @@ router.get('/sessions/:id', async (req: Request, res: Response) => {
       model: session.model
     };
 
-    res.json({ session: info, history: session.instructorHistory });
+    sendResponse(req, res, { session: info, history: session.instructorHistory });
   } catch (error) {
     logger.error(`API: Failed to get session: ${error}`);
-    res.status(500).json({ error: (error as Error).message });
+    sendResponse(req, res, { error: (error as Error).message }, 500);
   }
 });
 
@@ -125,17 +151,17 @@ router.delete('/sessions/:id', async (req: Request, res: Response) => {
     const session = await sessionManager.loadSession(id);
 
     if (!session) {
-      res.status(404).json({ error: 'Session not found' });
+      sendResponse(req, res, { error: 'Session not found' }, 404);
       return;
     }
 
     sessionManager.endSession(id, 'API request');
     logger.info(`API: Ended session ${id}`);
 
-    res.json({ success: true, sessionId: id });
+    sendResponse(req, res, { success: true, sessionId: id });
   } catch (error) {
     logger.error(`API: Failed to end session: ${error}`);
-    res.status(500).json({ error: (error as Error).message });
+    sendResponse(req, res, { error: (error as Error).message }, 500);
   }
 });
 
@@ -152,13 +178,13 @@ router.post('/sessions/:id/messages', async (req: Request, res: Response) => {
     const { content } = req.body;
 
     if (!content) {
-      res.status(400).json({ error: 'content is required' });
+      sendResponse(req, res, { error: 'content is required' }, 400);
       return;
     }
 
     const session = await sessionManager.loadSession(id);
     if (!session) {
-      res.status(404).json({ error: 'Session not found' });
+      sendResponse(req, res, { error: 'Session not found' }, 404);
       return;
     }
 
@@ -171,7 +197,7 @@ router.post('/sessions/:id/messages', async (req: Request, res: Response) => {
     // Reload session for updated state
     const updatedSession = sessionManager.getSession(id);
 
-    res.json({
+    sendResponse(req, res, {
       sessionId: id,
       status: updatedSession?.status || 'waiting',
       response: result.response,
@@ -180,7 +206,7 @@ router.post('/sessions/:id/messages', async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(`API: Failed to send message: ${error}`);
-    res.status(500).json({ error: (error as Error).message });
+    sendResponse(req, res, { error: (error as Error).message }, 500);
   }
 });
 
@@ -201,7 +227,7 @@ router.get('/sessions/:id/messages/stream', async (req: Request, res: Response) 
   const content = req.query.content as string;
 
   if (!content) {
-    res.status(400).json({ error: 'content query parameter is required' });
+    sendResponse(req, res, { error: 'content query parameter is required' }, 400);
     return;
   }
 
@@ -216,7 +242,7 @@ router.post('/sessions/:id/messages/stream', async (req: Request, res: Response)
   const { content } = req.body;
 
   if (!content) {
-    res.status(400).json({ error: 'content is required' });
+    sendResponse(req, res, { error: 'content is required' }, 400);
     return;
   }
 
@@ -230,7 +256,7 @@ async function handleSSEStream(sessionId: string, content: string, req: Request,
   try {
     const session = await sessionManager.loadSession(sessionId);
     if (!session) {
-      res.status(404).json({ error: 'Session not found' });
+      sendResponse(req, res, { error: 'Session not found' }, 404);
       return;
     }
 
@@ -268,7 +294,7 @@ async function handleSSEStream(sessionId: string, content: string, req: Request,
   } catch (error) {
     logger.error(`API: SSE stream error: ${error}`);
     if (!res.headersSent) {
-      res.status(500).json({ error: (error as Error).message });
+      sendResponse(req, res, { error: (error as Error).message }, 500);
     } else {
       sendSSE(res, 'error', { message: (error as Error).message });
       res.end();
