@@ -224,6 +224,24 @@ The CLI pipe backend uses Claude CLI's stream-json format:
 - **Frontend**: Vue 3, Vite, Pinia, Vue Router
 - **API**: @anthropic-ai/sdk or Claude CLI
 - **Storage**: JSONL event sourcing
+- **ASR**: sherpa-onnx WebAssembly (voice input)
+
+## Third-Party Dependencies
+
+### sherpa-onnx WASM (Voice Input)
+
+The voice input feature uses [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) WebAssembly files for browser-based speech recognition.
+
+- **Source**: https://huggingface.co/spaces/k2-fsa/web-assembly-asr-sherpa-onnx-zh-en
+- **Model**: Zipformer (Chinese + English, ~200MB)
+- **License**: Apache 2.0
+- **Files**: Downloaded automatically via `npm install` (postinstall script)
+
+To manually download:
+```bash
+cd frontend
+npm run download:asr
+```
 
 ## License
 

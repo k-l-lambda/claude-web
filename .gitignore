@@ -5,3 +5,6 @@ dist/
 *.local.*
 
 backend/sessions/
+
+# Third-party ASR model files (downloaded via postinstall)
+frontend/public/sherpa-onnx/

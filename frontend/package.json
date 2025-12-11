@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "bash scripts/download-sherpa-onnx.sh",
+    "download:asr": "bash scripts/download-sherpa-onnx.sh"
   },
   "dependencies": {
     "js-yaml": "^4.1.1",
